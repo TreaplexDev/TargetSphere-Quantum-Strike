@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced 3D Game by Treaplex</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            font-family: 'Arial', sans-serif;
+            color: white;
+            touch-action: none;
+            user-select: none;
+        }
+        canvas { 
+            display: block; 
+        }
+        #menu {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 100;
+            width: 300px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            border: 1px solid #444;
+        }
+        #settings-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 100;
+            width: 300px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            border: 1px solid #444;
+            display: none;
+        }
+        .panel-header {
+            font-size: 18px;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .settings-group {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+        .settings-group-title {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #4CAF50;
+        }
+        button {
+            background: #4CAF50;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            margin: 5px 0;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        button:hover {
+            background: #45a049;
+            transform: translateY(-1px);
+        }
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+        }
+        button.secondary {
+            background: #333;
+        }
+        button.secondary:hover {
+            background: #444;
+        }
+        select, input[type="range"] {
+            width: 100%;
+            margin: 5px 0;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            height: 8px;
+            background: #333;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            font-size: 13px;
+        }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            cursor: pointer;
+        }
+        .checkbox-label input {
+            margin-right: 8px;
+        }
+        #debug {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: flex;
+            gap: 15px;
+        }
+        .debug-item {
+            display: flex;
+            align-items: center;
+        }
+        .debug-value {
+            margin-left: 5px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        #score {
+            position: absolute;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 16px;
+            z-index: 100;
+            display: flex;
+            gap: 15px;
+        }
+        #instruction {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 25px;
+            border-radius: 15px;
+            max-width: 80%;
+            text-align: center;
+            z-index: 200;
+            width: 400px;
+            border: 1px solid #4CAF50;
+            box-shadow: 0 0 30px rgba(76, 175, 80, 0.3);
+        }
+        #credits {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        .hidden {
+            display: none;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            margin-left: 5px;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div id="menu">
+        <div class="panel-header">3D Game</div>
+        <button id="startBtn">Начать игру</button>
+        <button id="testBtn">Тест производительности</button>
+        <button id="settingsBtn">Настройки</button>
+        <button id="debugBtn" class="secondary">Показать дебаг</button>
+    </div>
+
+    <div id="settings-panel">
+        <div class="panel-header">
+            Настройки
+            <button id="closeSettingsBtn" class="secondary" style="width: auto; padding: 2px 8px;">×</button>
+        </div>
+        
+        <div class="settings-group">
+            <div class="settings-group-title">Графика</div>
+            
+            <label>
+                Качество текстур:
+                <select id="textureQuality">
+                    <option value="low">Низкое</option>
+                    <option value="medium" selected>Среднее</option>
+                    <option value="high">Высокое</option>
+                    <option value="ultra">Ультра</option>
+                </select>
+            </label>
+            
+            <label>
+                Разрешение рендера:
+                <select id="renderResolution">
+                    <option value="0.5">50%</option>
+                    <option value="0.75">75%</option>
+                    <option value="1" selected>100% (родное)</option>
+                    <option value="1.25">125%</option>
+                    <option value="1.5">150%</option>
+                </select>
+            </label>
+            
+            <label>
+                Антиалиасинг:
+                <select id="antiAliasing">
+                    <option value="none">Нет</option>
+                    <option value="fxaa">FXAA (быстрый)</option>
+                    <option value="msaa2">MSAA 2x</option>
+                    <option value="msaa4" selected>MSAA 4x</option>
+                    <option value="msaa8">MSAA 8x</option>
+                </select>
+            </label>
+            
+            <div class="checkbox-label">
+                <input type="checkbox" id="shadowsEnabled" checked>
+                <label for="shadowsEnabled">Тени</label>
+                <div class="tooltip">?
+                    <span class="tooltiptext">Включает/выключает отбрасывание теней от объектов</span>
+                </div>
+            </div>
+            
+            <div class="checkbox-label">
+                <input type="checkbox" id="postProcessingEnabled" checked>
+                <label for="postProcessingEnabled">Пост-обработка</label>
+                <div class="tooltip">?
+                    <span class="tooltiptext">Эффекты постобработки (Bloom, тонирование и др.)</span>
+                </div>
+            </div>
+            
+            <label>
+                Интенсивность Bloom:
+                <input type="range" id="bloomIntensity" min="0" max="2" step="0.1" value="0.7">
+            </label>
+            
+            <label>
+                Порог Bloom:
+                <input type="range" id="bloomThreshold" min="0" max="1" step="0.05" value="0.4">
+            </label>
+        </div>
+        
+        <div class="settings-group">
+            <div class="settings-group-title">Производительность</div>
+            
+            <label>
+                Ограничение FPS:
+                <select id="fpsLimit">
+                    <option value="0">Нет</option>
+                    <option value="30">30 FPS</option>
+                    <option value="60" selected>60 FPS</option>
+                    <option value="120">120 FPS</option>
+                    <option value="144">144 FPS</option>
+                </select>
+            </label>
+            
+            <div class="checkbox-label">
+                <input type="checkbox" id="vsyncEnabled" checked>
+                <label for="vsyncEnabled">VSync</label>
+                <div class="tooltip">?
+                    <span class="tooltiptext">Синхронизация с частотой обновления монитора</span>
+                </div>
+            </div>
+            
+            <label>
+                Детализация объектов:
+                <input type="range" id="geometryDetail" min="1" max="10" step="1" value="5">
+            </label>
+            
+            <label>
+                Дистанция прорисовки:
+                <input type="range" id="renderDistance" min="10" max="1000" step="10" value="500">
+            </label>
+        </div>
+        
+        <div class="settings-group">
+            <div class="settings-group-title">Игровой процесс</div>
+            
+            <label>
+                Сложность:
+                <select id="difficulty">
+                    <option value="easy">Легкая</option>
+                    <option value="normal" selected>Нормальная</option>
+                    <option value="hard">Сложная</option>
+                    <option value="insane">Безумная</option>
+                </select>
+            </label>
+            
+            <label>
+                Скорость появления целей:
+                <input type="range" id="spawnRate" min="0.5" max="5" step="0.1" value="1.5">
+            </label>
+            
+            <label>
+                Размер целей:
+                <input type="range" id="targetSize" min="0.1" max="1" step="0.05" value="0.3">
+            </label>
+            
+            <div class="checkbox-label">
+                <input type="checkbox" id="movingTargets" checked>
+                <label for="movingTargets">Движущиеся цели</label>
+            </div>
+            
+            <div class="checkbox-label">
+                <input type="checkbox" id="gravityEnabled">
+                <label for="gravityEnabled">Гравитация</label>
+            </div>
+        </div>
+        
+        <div class="settings-group">
+            <div class="settings-group-title">Управление</div>
+            
+            <label>
+                Чувствительность мыши:
+                <input type="range" id="mouseSensitivity" min="0.1" max="3" step="0.1" value="1">
+            </label>
+            
+            <label>
+                Инверсия оси Y:
+                <select id="invertYAxis">
+                    <option value="0" selected>Нет</option>
+                    <option value="1">Да</option>
+                </select>
+            </label>
+        </div>
+        
+        <button id="applySettingsBtn">Применить настройки</button>
+        <button id="resetSettingsBtn" class="secondary">Сбросить к стандартным</button>
+    </div>
+
+    <div id="debug" class="hidden">
+        <div class="debug-item">FPS: <span class="debug-value" id="fpsCounter">0</span></div>
+        <div class="debug-item">Объекты: <span class="debug-value" id="objectCount">0</span></div>
+        <div class="debug-item">VRAM: <span class="debug-value" id="vramUsage">0 MB</span></div>
+        <div class="debug-item">Draw Calls: <span class="debug-value" id="drawCalls">0</span></div>
+    </div>
+
+    <div id="score" class="hidden">
+        <div>Счёт: <span>0</span></div>
+        <div>Точность: <span id="accuracy">100%</span></div>
+    </div>
+
+    <div id="instruction" class="hidden">
+        <h2>Как играть</h2>
+        <p>Кликайте по целям, чтобы заработать очки!</p>
+        <p>🔴 Красные: 1 очко | 🔵 Синие: 2 очка | 🟢 Зелёные: 3 очка</p>
+        <p>⚫ Чёрные: -5 очков | 💀 Черепа: конец игры</p>
+        <p>Используйте колесо мыши для масштабирования</p>
+        <button id="closeInstruction">Начать игру</button>
+    </div>
+
+    <div id="credits">Advanced 3D Game by Treaplex</div>
+
+    <script>
+        // Основные переменные
+        let scene, camera, renderer, controls, ball, composer, bloomPass;
+        let startTime, lastTime, fps, frameCount, lastFpsUpdate, lastFrameTime = 0;
+        let gameStarted = false;
+        let testMode = false;
+        let score = 0;
+        let shots = 0;
+        let hits = 0;
+        let objects = [];
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+        let targetMoveSpeed = 0.01;
+        let spawnInterval;
+        let gameSettings = {
+            graphics: {
+                textureQuality: 'medium',
+                renderResolution: 1,
+                antiAliasing: 'msaa4',
+                shadows: true,
+                postProcessing: true,
+                bloomIntensity: 0.7,
+                bloomThreshold: 0.4,
+                geometryDetail: 5,
+                renderDistance: 500
+            },
+            performance: {
+                fpsLimit: 60,
+                vsync: true
+            },
+            gameplay: {
+                difficulty: 'normal',
+                spawnRate: 1.5,
+                targetSize: 0.3,
+                movingTargets: true,
+                gravity: false
+            },
+            controls: {
+                mouseSensitivity: 1,
+                invertY: false
+            }
+        };
+
+        // Инициализация
+        function init() {
+            // Загрузка сохраненных настроек
+            loadSettings();
+            
+            // Сцена
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x111122);
+            scene.fog = new THREE.FogExp2(0x111122, 0.002);
+
+            // Камера
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, gameSettings.graphics.renderDistance);
+            camera.position.z = 5;
+
+            // Рендерер
+            renderer = new THREE.WebGLRenderer({ 
+                antialias: gameSettings.graphics.antiAliasing !== 'none',
+                powerPreference: "high-performance"
+            });
+            
+            updateRendererSettings();
+            renderer.setSize(window.innerWidth * gameSettings.graphics.renderResolution, 
+                            window.innerHeight * gameSettings.graphics.renderResolution);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.body.appendChild(renderer.domElement);
+
+            // Управление камерой
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05 * gameSettings.controls.mouseSensitivity;
+            controls.rotateSpeed = 0.5 * gameSettings.controls.mouseSensitivity;
+            if(gameSettings.controls.invertY) {
+                controls.minPolarAngle = Math.PI;
+                controls.maxPolarAngle = 2 * Math.PI;
+            }
+
+            // Освещение
+            const ambientLight = new THREE.AmbientLight(0x404040);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(1, 1, 1);
+            directionalLight.castShadow = gameSettings.graphics.shadows;
+            if(gameSettings.graphics.shadows) {
+                directionalLight.shadow.mapSize.width = 1024;
+                directionalLight.shadow.mapSize.height = 1024;
+                directionalLight.shadow.camera.near = 0.5;
+                directionalLight.shadow.camera.far = 500;
+            }
+            scene.add(directionalLight);
+
+            // Постобработка
+            if(gameSettings.graphics.postProcessing) {
+                setupPostProcessing();
+            }
+
+            // Инициализация времени
+            startTime = Date.now();
+            lastTime = 0;
+            fps = 0;
+            frameCount = 0;
+            lastFpsUpdate = 0;
+        }
+
+        function setupPostProcessing() {
+            const renderScene = new THREE.RenderPass(scene, camera);
+            
+            bloomPass = new THREE.UnrealBloomPass(
+                new THREE.Vector2(window.innerWidth, window.innerHeight),
+                gameSettings.graphics.bloomIntensity,
+                gameSettings.graphics.bloomThreshold,
+                0.85
+            );
+            
+            composer = new THREE.EffectComposer(renderer);
+            composer.addPass(renderScene);
+            composer.addPass(bloomPass);
+        }
+
+        function updateRendererSettings() {
+            if(renderer) {
+                renderer.shadowMap.enabled = gameSettings.graphics.shadows;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                renderer.setPixelRatio(gameSettings.graphics.renderResolution * window.devicePixelRatio);
+                renderer.vsync = gameSettings.performance.vsync;
+                
+                if(gameSettings.graphics.antiAliasing === 'fxaa') {
+                    renderer.antialias = false;
+                    if(composer) {
+                        const fxaaPass = new THREE.ShaderPass(THREE.FXAAShader);
+                        fxaaPass.uniforms['resolution'].value.set(
+                            1 / (window.innerWidth * gameSettings.graphics.renderResolution),
+                            1 / (window.innerHeight * gameSettings.graphics.renderResolution)
+                        );
+                        composer.addPass(fxaaPass);
+                    }
+                } else {
+                    renderer.antialias = gameSettings.graphics.antiAliasing !== 'none';
+                }
+            }
+        }
+
+        // Создание игровой сцены
+        function createGameScene() {
+            // Очистка сцены
+            clearScene();
+            
+            score = 0;
+            shots = 0;
+            hits = 0;
+            updateScoreDisplay();
+            document.getElementById('score').classList.remove('hidden');
+
+            // Освещение
+            const ambientLight = new THREE.AmbientLight(0x404040);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(1, 1, 1);
+            directionalLight.castShadow = gameSettings.graphics.shadows;
+            if(gameSettings.graphics.shadows) {
+                directionalLight.shadow.mapSize.width = 1024;
+                directionalLight.shadow.mapSize.height = 1024;
+                directionalLight.shadow.camera.near = 0.5;
+                directionalLight.shadow.camera.far = 500;
+            }
+            scene.add(directionalLight);
+
+            // Игровой шарик (не цель)
+            const segments = Math.floor(8 + gameSettings.graphics.geometryDetail * 2);
+            const ballGeometry = new THREE.SphereGeometry(0.5, segments, segments);
+            const ballMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x888888,
+                shininess: 100,
+                wireframe: false
+            });
+            ball = new THREE.Mesh(ballGeometry, ballMaterial);
+            ball.castShadow = gameSettings.graphics.shadows;
+            ball.receiveShadow = gameSettings.graphics.shadows;
+            scene.add(ball);
+            objects.push(ball);
+
+            // Настройка сложности
+            setupDifficulty();
+
+            // Создание начальных мишеней
+            createInitialTargets();
+
+            // Запуск спавна новых мишеней
+            spawnInterval = setInterval(createTarget, 1000 / gameSettings.gameplay.spawnRate);
+        }
+
+        function setupDifficulty() {
+            switch(gameSettings.gameplay.difficulty) {
+                case 'easy':
+                    targetMoveSpeed = 0.005;
+                    break;
+                case 'normal':
+                    targetMoveSpeed = 0.01;
+                    break;
+                case 'hard':
+                    targetMoveSpeed = 0.02;
+                    break;
+                case 'insane':
+                    targetMoveSpeed = 0.03;
+                    break;
+            }
+        }
+
+        function createInitialTargets() {
+            const count = gameSettings.gameplay.difficulty === 'easy' ? 10 : 
+                         gameSettings.gameplay.difficulty === 'normal' ? 15 :
+                         gameSettings.gameplay.difficulty === 'hard' ? 20 : 25;
+            
+            for(let i = 0; i < count; i++) {
+                createTarget();
+            }
+        }
+
+        function createTarget() {
+            if(!gameStarted) return;
+            
+            const segments = Math.floor(6 + gameSettings.graphics.geometryDetail);
+            const geometry = new THREE.SphereGeometry(
+                gameSettings.gameplay.targetSize, 
+                segments, 
+                segments
+            );
+            
+            // Выбираем тип цели
+            let material, points, velocity;
+            const rand = Math.random();
+            
+            if(rand < 0.55) { // Обычные цели (55%)
+                if(rand < 0.3) {
+                    material = new THREE.MeshPhongMaterial({ color: 0xff0000 }); // Красный
+                    points = 1;
+                } else if(rand < 0.5) {
+                    material = new THREE.MeshPhongMaterial({ color: 0x0000ff }); // Синий
+                    points = 2;
+                } else {
+                    material = new THREE.MeshPhongMaterial({ color: 0x00ff00 }); // Зелёный
+                    points = 3;
+                }
+            } 
+            else if(rand < 0.85) { // Специальные цели (30%)
+                if(rand < 0.7) {
+                    material = new THREE.MeshPhongMaterial({ color: 0xffff00 }); // Жёлтый
+                    points = 5;
+                } else if(rand < 0.8) {
+                    material = new THREE.MeshPhongMaterial({ color: 0xff00ff }); // Розовый
+                    points = 8;
+                } else {
+                    material = new THREE.MeshPhongMaterial({ color: 0x00ffff }); // Голубой
+                    points = 10;
+                }
+            }
+            else { // Опасные цели (15%)
+                if(rand < 0.92) {
+                    material = new THREE.MeshPhongMaterial({ color: 0x000000 }); // Чёрный
+                    points = -5;
+                } else {
+                    material = new THREE.MeshPhongMaterial({ 
+                        color: 0xffffff,
+                        map: createSkullTexture()
+                    }); // Череп
+                    points = -999; // Мгновенный проигрыш
+                }
+            }
+            
+            const target = new THREE.Mesh(geometry, material);
+            target.castShadow = gameSettings.graphics.shadows;
+            target.receiveShadow = gameSettings.graphics.shadows;
+            target.userData.points = points;
+            target.userData.isSpecial = points > 3 || points < 0;
+            
+            // Случайная позиция
+            const distance = 5 + Math.random() * 10;
+            target.position.x = (Math.random() - 0.5) * distance;
+            target.position.y = (Math.random() - 0.5) * distance;
+            target.position.z = (Math.random() - 0.5) * distance;
+            
+            // Случайное движение
+            if(gameSettings.gameplay.movingTargets) {
+                target.userData.velocity = new THREE.Vector3(
+                    (Math.random() - 0.5) * targetMoveSpeed,
+                    (Math.random() - 0.5) * targetMoveSpeed,
+                    (Math.random() - 0.5) * targetMoveSpeed
+                );
+            }
+            
+            scene.add(target);
+            objects.push(target);
+        }
+
+        function createSkullTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            
+            // Рисуем череп
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(32, 22, 15, 0, Math.PI * 2); // Голова
+            ctx.fill();
+            
+            // Глазницы
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(25, 20, 3, 0, Math.PI * 2);
+            ctx.arc(39, 20, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Нос
+            ctx.beginPath();
+            ctx.moveTo(32, 22);
+            ctx.lineTo(30, 28);
+            ctx.lineTo(34, 28);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Рот
+            ctx.beginPath();
+            ctx.arc(32, 32, 8, 0, Math.PI);
+            ctx.fill();
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            return texture;
+        }
+
+        function clearScene() {
+            // Очистка сцены
+            while(scene.children.length > 0){ 
+                scene.remove(scene.children[0]); 
+            }
+            objects = [];
+            
+            if(spawnInterval) {
+                clearInterval(spawnInterval);
+                spawnInterval = null;
+            }
+        }
+
+        // Создание тестовой сцены
+        function createTestScene() {
+            // Очистка сцены
+            clearScene();
+            document.getElementById('score').classList.add('hidden');
+
+            // Освещение
+            const ambientLight = new THREE.AmbientLight(0x404040);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(1, 1, 1);
+            directionalLight.castShadow = gameSettings.graphics.shadows;
+            scene.add(directionalLight);
+
+            // Создание множества объектов
+            const geometryDetail = gameSettings.graphics.geometryDetail;
+            const objectCount = 50 + geometryDetail * 20;
+            
+            for (let i = 0; i < objectCount; i++) {
+                let geometry, material;
+                
+                if(Math.random() > 0.3) {
+                    // Сферы
+                    const segments = Math.floor(3 + geometryDetail * 1.5);
+                    geometry = new THREE.SphereGeometry(
+                        0.3 + Math.random() * 0.7, 
+                        segments, 
+                        segments
+                    );
+                } else {
+                    // Боксы
+                    geometry = new THREE.BoxGeometry(
+                        0.5 + Math.random(), 
+                        0.5 + Math.random(), 
+                        0.5 + Math.random()
+                    );
+                }
+                
+                material = new THREE.MeshPhongMaterial({ 
+                    color: Math.random() * 0xffffff,
+                    wireframe: Math.random() > 0.7,
+                    shininess: Math.random() * 100
+                });
+                
+                const obj = new THREE.Mesh(geometry, material);
+                obj.castShadow = gameSettings.graphics.shadows;
+                obj.receiveShadow = gameSettings.graphics.shadows;
+                
+                // Случайная позиция
+                obj.position.x = (Math.random() - 0.5) * 30;
+                obj.position.y = (Math.random() - 0.5) * 30;
+                obj.position.z = (Math.random() - 0.5) * 30;
+                
+                // Случайное вращение
+                obj.rotation.x = Math.random() * Math.PI * 2;
+                obj.rotation.y = Math.random() * Math.PI * 2;
+                
+                // Случайное движение
+                obj.userData.velocity = new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.02,
+                    (Math.random() - 0.5) * 0.02,
+                    (Math.random() - 0.5) * 0.02
+                );
+                
+                scene.add(obj);
+                objects.push(obj);
+            }
+        }
+
+        // Обработка клика
+        function onClick(event) {
+            if (!gameStarted) return;
+            shots++;
+
+            // Получаем позицию мыши
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            // Обновляем рейкастер
+            raycaster.setFromCamera(mouse, camera);
+
+            // Проверяем пересечения
+            const intersects = raycaster.intersectObjects(objects);
+
+            if (intersects.length > 0) {
+                const object = intersects[0].object;
+                
+                // Если это не основной шар
+                if (object !== ball) {
+                    hits++;
+                    
+                    // Добавляем очки
+                    score += object.userData.points;
+                    
+                    // Проверяем на проигрыш (череп)
+                    if(object.userData.points === -999) {
+                        endGame();
+                        return;
+                    }
+                    
+                    // Эффект при попадании
+                    if(object.userData.isSpecial) {
+                        createExplosion(object.position);
+                    }
+                    
+                    // Удаляем объект
+                    scene.remove(object);
+                    objects = objects.filter(obj => obj !== object);
+                    
+                    // Обновляем интерфейс
+                    updateScoreDisplay();
+                    
+                    // Создаем новый таргет
+                    if(gameStarted) {
+                        createTarget();
+                    }
+                }
+            }
+            
+            updateScoreDisplay();
+        }
+
+        function createExplosion(position) {
+            const particles = 10;
+            const explosionGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particles * 3);
+            const colors = new Float32Array(particles * 3);
+            const sizes = new Float32Array(particles);
+            
+            for(let i = 0; i < particles; i++) {
+                // Позиции
+                positions[i * 3] = position.x;
+                positions[i * 3 + 1] = position.y;
+                positions[i * 3 + 2] = position.z;
+                
+                // Цвета
+                colors[i * 3] = Math.random();
+                colors[i * 3 + 1] = Math.random();
+                colors[i * 3 + 2] = Math.random();
+                
+                // Размеры
+                sizes[i] = Math.random() * 0.5 + 0.1;
+            }
+            
+            explosionGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            explosionGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            explosionGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+            
+            const material = new THREE.PointsMaterial({
+                size: 0.2,
+                vertexColors: true,
+                transparent: true,
+                opacity: 1,
+                blending: THREE.AdditiveBlending,
+                sizeAttenuation: true
+            });
+            
+            const explosion = new THREE.Points(explosionGeometry, material);
+            explosion.userData.velocity = [];
+            
+            for(let i = 0; i < particles; i++) {
+                explosion.userData.velocity.push(
+                    new THREE.Vector3(
+                        (Math.random() - 0.5) * 0.2,
+                        (Math.random() - 0.5) * 0.2,
+                        (Math.random() - 0.5) * 0.2
+                    )
+                );
+            }
+            
+            scene.add(explosion);
+            objects.push(explosion);
+            
+            // Удаление через 1 секунду
+            setTimeout(() => {
+                if(scene && scene.children.includes(explosion)) {
+                    scene.remove(explosion);
+                    objects = objects.filter(obj => obj !== explosion);
+                }
+            }, 1000);
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById('score').querySelector('span').textContent = score;
+            const accuracy = shots > 0 ? Math.round((hits / shots) * 100) : 100;
+            document.getElementById('accuracy').textContent = `${accuracy}%`;
+        }
+
+        function endGame() {
+            gameStarted = false;
+            clearScene();
+            
+            // Показываем сообщение о конце игры
+            const instruction = document.getElementById('instruction');
+            instruction.innerHTML = `
+                <h2>Игра окончена</h2>
+                <p>Ваш счёт: ${score}</p>
+                <p>Точность: ${shots > 0 ? Math.round((hits / shots) * 100) : 100}%</p>
+                <button id="restartBtn">Играть снова</button>
+            `;
+            instruction.classList.remove('hidden');
+            
+            document.getElementById('restartBtn').addEventListener('click', () => {
+                instruction.classList.add('hidden');
+                startGame();
+            });
+        }
+
+        function startGame() {
+            gameStarted = true;
+            testMode = false;
+            createGameScene();
+            
+            // Показываем инструкцию
+            document.getElementById('instruction').classList.remove('hidden');
+            
+            // Скрываем меню
+            document.getElementById('menu').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('menu').classList.add('hidden');
+            }, 300);
+        }
+
+        function startTest() {
+            gameStarted = false;
+            testMode = true;
+            createTestScene();
+            animate();
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('testBtn').disabled = true;
+            document.getElementById('score').classList.add('hidden');
+            
+            // Удаляем обработчик кликов игры
+            window.removeEventListener('click', onClick, false);
+            
+            // Скрываем меню, если дебаг не включен
+            if (document.getElementById('debug').classList.contains('hidden')) {
+                document.getElementById('menu').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('menu').classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        // Анимация
+        function animate() {
+            const now = Date.now();
+            const deltaTime = now - lastFrameTime;
+            
+            // Ограничение FPS
+            if(gameSettings.performance.fpsLimit > 0) {
+                const minFrameTime = 1000 / gameSettings.performance.fpsLimit;
+                if(deltaTime < minFrameTime) {
+                    requestAnimationFrame(animate);
+                    return;
+                }
+            }
+            
+            lastFrameTime = now;
+            
+            requestAnimationFrame(animate);
+            
+            // Движение объектов
+            objects.forEach(obj => {
+                if(obj.userData.velocity) {
+                    // Применяем гравитацию
+                    if(gameSettings.gameplay.gravity && obj.position.y > -10) {
+                        obj.userData.velocity.y -= 0.001;
+                    }
+                    
+                    // Обновляем позицию
+                    obj.position.x += obj.userData.velocity.x;
+                    obj.position.y += obj.userData.velocity.y;
+                    obj.position.z += obj.userData.velocity.z;
+                    
+                    // Отскок от границ
+                    const bounds = 15;
+                    if(Math.abs(obj.position.x) > bounds) obj.userData.velocity.x *= -1;
+                    if(Math.abs(obj.position.y) > bounds) obj.userData.velocity.y *= -1;
+                    if(Math.abs(obj.position.z) > bounds) obj.userData.velocity.z *= -1;
+                }
+                
+                // Вращение объектов в тестовом режиме
+                if(testMode && Math.random() > 0.3) {
+                    obj.rotation.x += 0.01;
+                    obj.rotation.y += 0.01;
+                }
+            });
+            
+            // Обновление управления
+            controls.update();
+            
+            // Рендер
+            if(gameSettings.graphics.postProcessing && composer) {
+                composer.render();
+            } else {
+                renderer.render(scene, camera);
+            }
+            
+            // FPS счетчик
+            frameCount++;
+            if (now - lastFpsUpdate >= 1000) {
+                fps = Math.round((frameCount * 1000) / (now - lastFpsUpdate));
+                if (document.getElementById('fpsCounter')) {
+                    document.getElementById('fpsCounter').textContent = fps;
+                }
+                frameCount = 0;
+                lastFpsUpdate = now;
+                
+                // Обновление информации о VRAM
+                updateMemoryInfo();
+            }
+            
+            // Обновление дебаг-информации
+            if (!document.getElementById('debug').classList.contains('hidden')) {
+                if (document.getElementById('objectCount')) {
+                    document.getElementById('objectCount').textContent = objects.length;
+                }
+                if (renderer.info) {
+                    document.getElementById('drawCalls').textContent = renderer.info.render.calls;
+                }
+            }
+        }
+
+        function updateMemoryInfo() {
+            if(renderer.info && renderer.info.memory) {
+                const vramMB = Math.round(renderer.info.memory.geometries + 
+                                        renderer.info.memory.textures) / (1024 * 1024);
+                document.getElementById('vramUsage').textContent = vramMB.toFixed(1);
+            }
+        }
+
+        // Настройки
+        function loadSettings() {
+            const savedSettings = localStorage.getItem('gameSettings');
+            if(savedSettings) {
+                gameSettings = JSON.parse(savedSettings);
+                applySettingsToUI();
+            }
+        }
+
+        function saveSettings() {
+            localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
+        }
+
+        function applySettingsToUI() {
+            // Графика
+            document.getElementById('textureQuality').value = gameSettings.graphics.textureQuality;
+            document.getElementById('renderResolution').value = gameSettings.graphics.renderResolution;
+            document.getElementById('antiAliasing').value = gameSettings.graphics.antiAliasing;
+            document.getElementById('shadowsEnabled').checked = gameSettings.graphics.shadows;
+            document.getElementById('postProcessingEnabled').checked = gameSettings.graphics.postProcessing;
+            document.getElementById('bloomIntensity').value = gameSettings.graphics.bloomIntensity;
+            document.getElementById('bloomThreshold').value = gameSettings.graphics.bloomThreshold;
+            document.getElementById('geometryDetail').value = gameSettings.graphics.geometryDetail;
+            document.getElementById('renderDistance').value = gameSettings.graphics.renderDistance;
+            
+            // Производительность
+            document.getElementById('fpsLimit').value = gameSettings.performance.fpsLimit;
+            document.getElementById('vsyncEnabled').checked = gameSettings.performance.vsync;
+            
+            // Геймплей
+            document.getElementById('difficulty').value = gameSettings.gameplay.difficulty;
+            document.getElementById('spawnRate').value = gameSettings.gameplay.spawnRate;
+            document.getElementById('targetSize').value = gameSettings.gameplay.targetSize;
+            document.getElementById('movingTargets').checked = gameSettings.gameplay.movingTargets;
+            document.getElementById('gravityEnabled').checked = gameSettings.gameplay.gravity;
+            
+            // Управление
+            document.getElementById('mouseSensitivity').value = gameSettings.controls.mouseSensitivity;
+            document.getElementById('invertYAxis').value = gameSettings.controls.invertY ? 1 : 0;
+        }
+
+        function applyUISettingsToGame() {
+            // Графика
+            gameSettings.graphics.textureQuality = document.getElementById('textureQuality').value;
+            gameSettings.graphics.renderResolution = parseFloat(document.getElementById('renderResolution').value);
+            gameSettings.graphics.antiAliasing = document.getElementById('antiAliasing').value;
+            gameSettings.graphics.shadows = document.getElementById('shadowsEnabled').checked;
+            gameSettings.graphics.postProcessing = document.getElementById('postProcessingEnabled').checked;
+            gameSettings.graphics.bloomIntensity = parseFloat(document.getElementById('bloomIntensity').value);
+            gameSettings.graphics.bloomThreshold = parseFloat(document.getElementById('bloomThreshold').value);
+            gameSettings.graphics.geometryDetail = parseInt(document.getElementById('geometryDetail').value);
+            gameSettings.graphics.renderDistance = parseInt(document.getElementById('renderDistance').value);
+            
+            // Производительность
+            gameSettings.performance.fpsLimit = parseInt(document.getElementById('fpsLimit').value);
+            gameSettings.performance.vsync = document.getElementById('vsyncEnabled').checked;
+            
+            // Геймплей
+            gameSettings.gameplay.difficulty = document.getElementById('difficulty').value;
+            gameSettings.gameplay.spawnRate = parseFloat(document.getElementById('spawnRate').value);
+            gameSettings.gameplay.targetSize = parseFloat(document.getElementById('targetSize').value);
+            gameSettings.gameplay.movingTargets = document.getElementById('movingTargets').checked;
+            gameSettings.gameplay.gravity = document.getElementById('gravityEnabled').checked;
+            
+            // Управление
+            gameSettings.controls.mouseSensitivity = parseFloat(document.getElementById('mouseSensitivity').value);
+            gameSettings.controls.invertY = document.getElementById('invertYAxis').value === '1';
+            
+            // Применяем настройки
+            updateRendererSettings();
+            
+            if(controls) {
+                controls.dampingFactor = 0.05 * gameSettings.controls.mouseSensitivity;
+                controls.rotateSpeed = 0.5 * gameSettings.controls.mouseSensitivity;
+                
+                if(gameSettings.controls.invertY) {
+                    controls.minPolarAngle = Math.PI;
+                    controls.maxPolarAngle = 2 * Math.PI;
+                } else {
+                    controls.minPolarAngle = 0;
+                    controls.maxPolarAngle = Math.PI;
+                }
+            }
+            
+            if(camera) {
+                camera.far = gameSettings.graphics.renderDistance;
+                camera.updateProjectionMatrix();
+            }
+            
+            if(bloomPass) {
+                bloomPass.strength = gameSettings.graphics.bloomIntensity;
+                bloomPass.threshold = gameSettings.graphics.bloomThreshold;
+            }
+            
+            // Пересоздаем сцену, если игра уже идет
+            if(gameStarted) {
+                createGameScene();
+            } else if(testMode) {
+                createTestScene();
+            }
+            
+            // Сохраняем настройки
+            saveSettings();
+        }
+
+        function resetSettings() {
+            // Сбрасываем на стандартные значения
+            gameSettings = {
+                graphics: {
+                    textureQuality: 'medium',
+                    renderResolution: 1,
+                    antiAliasing: 'msaa4',
+                    shadows: true,
+                    postProcessing: true,
+                    bloomIntensity: 0.7,
+                    bloomThreshold: 0.4,
+                    geometryDetail: 5,
+                    renderDistance: 500
+                },
+                performance: {
+                    fpsLimit: 60,
+                    vsync: true
+                },
+                gameplay: {
+                    difficulty: 'normal',
+                    spawnRate: 1.5,
+                    targetSize: 0.3,
+                    movingTargets: true,
+                    gravity: false
+                },
+                controls: {
+                    mouseSensitivity: 1,
+                    invertY: false
+                }
+            };
+            
+            applySettingsToUI();
+            applyUISettingsToGame();
+        }
+
+        // Обработчики кнопок
+        document.getElementById('startBtn').addEventListener('click', startGame);
+
+        document.getElementById('testBtn').addEventListener('click', startTest);
+
+        document.getElementById('settingsBtn').addEventListener('click', () => {
+            document.getElementById('settings-panel').style.display = 'block';
+            applySettingsToUI();
+        });
+
+        document.getElementById('closeSettingsBtn').addEventListener('click', () => {
+            document.getElementById('settings-panel').style.display = 'none';
+        });
+
+        document.getElementById('applySettingsBtn').addEventListener('click', () => {
+            applyUISettingsToGame();
+            document.getElementById('settings-panel').style.display = 'none';
+        });
+
+        document.getElementById('resetSettingsBtn').addEventListener('click', resetSettings);
+
+        document.getElementById('debugBtn').addEventListener('click', () => {
+            document.getElementById('debug').classList.toggle('hidden');
+            
+            // Показываем меню, если было скрыто
+            if (!document.getElementById('debug').classList.contains('hidden')) {
+                document.getElementById('menu').classList.remove('hidden');
+                document.getElementById('menu').style.opacity = '1';
+            }
+        });
+
+        document.getElementById('closeInstruction').addEventListener('click', () => {
+            document.getElementById('instruction').classList.add('hidden');
+            animate();
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('testBtn').disabled = false;
+            
+            // Добавляем обработчик кликов только после закрытия инструкции
+            window.addEventListener('click', onClick, false);
+        });
+
+        // Реакция на изменение размера окна
+        window.addEventListener('resize', () => {
+            if(camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth * gameSettings.graphics.renderResolution, 
+                                window.innerHeight * gameSettings.graphics.renderResolution);
+                
+                if(composer) {
+                    composer.setSize(
+                        window.innerWidth * gameSettings.graphics.renderResolution, 
+                        window.innerHeight * gameSettings.graphics.renderResolution
+                    );
+                }
+            }
+        });
+
+        // Показываем меню при двойном тапе
+        window.addEventListener('dblclick', () => {
+            document.getElementById('menu').classList.remove('hidden');
+            document.getElementById('menu').style.opacity = '1';
+        });
+
+        // Инициализация
+        init();
+    </script>
+</body>
+</html>
