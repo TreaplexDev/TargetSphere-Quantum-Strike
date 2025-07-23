@@ -79,7 +79,9 @@
 1. Установите `live-server`:
 ```bash
 npm install -g live-server
+```
 
-
-## Создатель
-👑
+## Лицензия
+Автор:Treaplex
+Версия:1.8.1 beta
+MIT License
